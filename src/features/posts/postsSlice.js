@@ -1,6 +1,8 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { fetchPosts, addPost, updatePost, deletePost } from './postService';
 
+const API_URL = 'https://jsonplaceholder.typicode.com/posts';
+
 // Async Thunks
 export const fetchPostsAsync = createAsyncThunk('posts/fetchPosts', async () => {
   const response = await fetchPosts();
@@ -16,10 +18,9 @@ export const updatePostAsync = createAsyncThunk(
   'posts/updatePost',
   async ({ id, post }, { rejectWithValue }) => {
     try {
-      const response = await axios.put(`${API_URL}/${id}`, post);
+      const response = await updatePost(id, post);
       return response.data;
     } catch (error) {
-      // Simulate the update locally if the API call fails
       return rejectWithValue({ id, post });
     }
   }
@@ -36,6 +37,7 @@ const postsSlice = createSlice({
   initialState: {
     posts: [],
     editPost: null,
+    searchQuery: '', // Add search query to state
     loading: false,
     error: null,
   },
@@ -45,6 +47,9 @@ const postsSlice = createSlice({
     },
     cancelEdit: (state) => {
       state.editPost = null;
+    },
+    setSearchQuery: (state, action) => {
+      state.searchQuery = action.payload; // Update search query
     },
   },
   extraReducers: (builder) => {
@@ -72,12 +77,12 @@ const postsSlice = createSlice({
         );
         state.editPost = null;
       })
-      .addCase(updatePostAsync.rejected,(state,action)=>{
-        const {id,post} = action.payload
-        state.posts = state.posts.map((p)=>
-        p.id === id ? {...p,...post}:p)
+      .addCase(updatePostAsync.rejected, (state, action) => {
+        const { id, post } = action.payload;
+        state.posts = state.posts.map((p) =>
+          p.id === id ? { ...p, ...post } : p
+        );
         state.editPost = null;
-
       })
       // Delete Post
       .addCase(deletePostAsync.fulfilled, (state, action) => {
@@ -86,5 +91,5 @@ const postsSlice = createSlice({
   },
 });
 
-export const { setEditPost, cancelEdit } = postsSlice.actions;
+export const { setEditPost, cancelEdit, setSearchQuery } = postsSlice.actions;
 export default postsSlice.reducer;
