@@ -12,10 +12,18 @@ export const addPostAsync = createAsyncThunk('posts/addPost', async (post) => {
   return response.data;
 });
 
-export const updatePostAsync = createAsyncThunk('posts/updatePost', async ({ id, post }) => {
-  const response = await updatePost(id, post);
-  return response.data;
-});
+export const updatePostAsync = createAsyncThunk(
+  'posts/updatePost',
+  async ({ id, post }, { rejectWithValue }) => {
+    try {
+      const response = await axios.put(`${API_URL}/${id}`, post);
+      return response.data;
+    } catch (error) {
+      // Simulate the update locally if the API call fails
+      return rejectWithValue({ id, post });
+    }
+  }
+);
 
 export const deletePostAsync = createAsyncThunk('posts/deletePost', async (id) => {
   await deletePost(id);
@@ -63,6 +71,13 @@ const postsSlice = createSlice({
           post.id === action.payload.id ? action.payload : post
         );
         state.editPost = null;
+      })
+      .addCase(updatePostAsync.rejected,(state,action)=>{
+        const {id,post} = action.payload
+        state.posts = state.posts.map((p)=>
+        p.id === id ? {...p,...post}:p)
+        state.editPost = null;
+
       })
       // Delete Post
       .addCase(deletePostAsync.fulfilled, (state, action) => {
